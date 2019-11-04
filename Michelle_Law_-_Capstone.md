@@ -32,6 +32,27 @@ str(aapl)
     ##  $ Adj.Close: num  35.7 36.8 36.1 36.6 36.8 ...
     ##  $ Volume   : int  6909100 3120100 3021200 2453000 2108400 1545200 2394700 2074200 2883700 2918700 ...
 
+``` r
+summary(aapl)
+```
+
+    ##          Date           Open            High            Low       
+    ##  2014-10-20:   1   Min.   :33.18   Min.   :34.06   Min.   :33.12  
+    ##  2014-10-21:   1   1st Qu.:41.55   1st Qu.:41.91   1st Qu.:41.31  
+    ##  2014-10-22:   1   Median :53.43   Median :54.05   Median :53.02  
+    ##  2014-10-23:   1   Mean   :55.35   Mean   :55.84   Mean   :54.86  
+    ##  2014-10-24:   1   3rd Qu.:67.59   3rd Qu.:68.19   3rd Qu.:67.03  
+    ##  2014-10-27:   1   Max.   :81.88   Max.   :82.27   Max.   :81.46  
+    ##  (Other)   :1253                                                  
+    ##      Close         Adj.Close         Volume        
+    ##  Min.   :33.37   Min.   :32.12   Min.   :  532700  
+    ##  1st Qu.:41.61   1st Qu.:39.98   1st Qu.: 1549000  
+    ##  Median :53.46   Median :52.29   Median : 2009400  
+    ##  Mean   :55.36   Mean   :54.23   Mean   : 2291645  
+    ##  3rd Qu.:67.61   3rd Qu.:66.80   3rd Qu.: 2712150  
+    ##  Max.   :82.00   Max.   :81.58   Max.   :14523800  
+    ## 
+
 Converting to date format
 -------------------------
 
@@ -89,7 +110,69 @@ aapl <- aapl %>% mutate(DiffAdjClose = Adj.Close - lag(Adj.Close))
 months <- as.numeric(format(as.Date(aapl$Date, '%Y-%m-%d'), '%m'))
 indx <- setNames( rep(c('Winter', 'Spring', 'Summer','Fall'),each=3), c(12,1:11))
 aapl$Season <- as.factor(unname(indx[as.character(months)]))
+
+head(aapl)
 ```
+
+    ##         Date     Open     High      Low    Close Adj.Close  Volume
+    ## 1 2014-10-20 37.24607 37.46781 36.38054 37.44635  35.67288 6909100
+    ## 2 2014-10-21 37.81116 38.64807 37.81116 38.62661  36.79723 3120100
+    ## 3 2014-10-22 38.46209 38.52647 37.90415 37.94707  36.14988 3021200
+    ## 4 2014-10-23 38.33333 38.77683 38.33333 38.41917  36.59963 2453000
+    ## 5 2014-10-24 38.41202 38.70529 38.27611 38.66238  36.83131 2108400
+    ## 6 2014-10-27 38.58369 38.70529 38.34049 38.61946  36.79043 1545200
+    ##        SMA DiffAdjClose Season
+    ## 1 36.20666           NA   Fall
+    ## 2 36.20666     1.124352   Fall
+    ## 3 36.51558    -0.647358   Fall
+    ## 4 36.52694     0.449749   Fall
+    ## 5 36.74045     0.231681   Fall
+    ## 6 36.95624    -0.040878   Fall
+
+``` r
+str(aapl)
+```
+
+    ## 'data.frame':    1259 obs. of  10 variables:
+    ##  $ Date        : Date, format: "2014-10-20" "2014-10-21" ...
+    ##  $ Open        : num  37.2 37.8 38.5 38.3 38.4 ...
+    ##  $ High        : num  37.5 38.6 38.5 38.8 38.7 ...
+    ##  $ Low         : num  36.4 37.8 37.9 38.3 38.3 ...
+    ##  $ Close       : num  37.4 38.6 37.9 38.4 38.7 ...
+    ##  $ Adj.Close   : num  35.7 36.8 36.1 36.6 36.8 ...
+    ##  $ Volume      : int  6909100 3120100 3021200 2453000 2108400 1545200 2394700 2074200 2883700 2918700 ...
+    ##  $ SMA         : num  36.2 36.2 36.5 36.5 36.7 ...
+    ##  $ DiffAdjClose: num  NA 1.124 -0.647 0.45 0.232 ...
+    ##  $ Season      : Factor w/ 4 levels "Fall","Spring",..: 1 1 1 1 1 1 1 1 1 1 ...
+
+``` r
+summary(aapl)
+```
+
+    ##       Date                 Open            High            Low       
+    ##  Min.   :2014-10-20   Min.   :33.18   Min.   :34.06   Min.   :33.12  
+    ##  1st Qu.:2016-01-20   1st Qu.:41.55   1st Qu.:41.91   1st Qu.:41.31  
+    ##  Median :2017-04-20   Median :53.43   Median :54.05   Median :53.02  
+    ##  Mean   :2017-04-19   Mean   :55.35   Mean   :55.84   Mean   :54.86  
+    ##  3rd Qu.:2018-07-19   3rd Qu.:67.59   3rd Qu.:68.19   3rd Qu.:67.03  
+    ##  Max.   :2019-10-18   Max.   :81.88   Max.   :82.27   Max.   :81.46  
+    ##                                                                      
+    ##      Close         Adj.Close         Volume              SMA       
+    ##  Min.   :33.37   Min.   :32.12   Min.   :  532700   Min.   :32.55  
+    ##  1st Qu.:41.61   1st Qu.:39.98   1st Qu.: 1549000   1st Qu.:39.95  
+    ##  Median :53.46   Median :52.29   Median : 2009400   Median :52.19  
+    ##  Mean   :55.36   Mean   :54.23   Mean   : 2291645   Mean   :54.23  
+    ##  3rd Qu.:67.61   3rd Qu.:66.80   3rd Qu.: 2712150   3rd Qu.:66.71  
+    ##  Max.   :82.00   Max.   :81.58   Max.   :14523800   Max.   :81.24  
+    ##                                                                    
+    ##   DiffAdjClose         Season   
+    ##  Min.   :-8.33370   Fall  :315  
+    ##  1st Qu.:-0.34624   Spring:319  
+    ##  Median : 0.05775   Summer:324  
+    ##  Mean   : 0.03092   Winter:301  
+    ##  3rd Qu.: 0.47694               
+    ##  Max.   : 4.86668               
+    ##  NA's   :1
 
 Check for any missing values and replace
 ========================================
@@ -102,7 +185,10 @@ sum(is.na(aapl))
 
 ``` r
 aapl$DiffAdjClose[1] <- 0
+sum(is.na(aapl))
 ```
+
+    ## [1] 0
 
 Check for correlation between attributes
 ----------------------------------------

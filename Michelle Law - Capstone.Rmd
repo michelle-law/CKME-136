@@ -10,6 +10,7 @@ output: github_document
 aapl <- read.csv("/Users/michellelaw/Documents/CKME999/8. CKME136 - Capstone Course /A.csv", stringsAsFactors = TRUE)
 head(aapl)
 str(aapl)
+summary(aapl)
 ```
 
 ## Converting to date format
@@ -40,6 +41,10 @@ aapl <- aapl %>% mutate(DiffAdjClose = Adj.Close - lag(Adj.Close))
 months <- as.numeric(format(as.Date(aapl$Date, '%Y-%m-%d'), '%m'))
 indx <- setNames( rep(c('Winter', 'Spring', 'Summer','Fall'),each=3), c(12,1:11))
 aapl$Season <- as.factor(unname(indx[as.character(months)]))
+
+head(aapl)
+str(aapl)
+summary(aapl)
 ```
 
 
@@ -47,6 +52,7 @@ aapl$Season <- as.factor(unname(indx[as.character(months)]))
 ```{r}
 sum(is.na(aapl))
 aapl$DiffAdjClose[1] <- 0
+sum(is.na(aapl))
 ```
 
 ## Check for correlation between attributes

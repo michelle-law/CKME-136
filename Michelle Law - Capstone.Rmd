@@ -1,0 +1,104 @@
+---
+title: "CKME 136 - Capstone"
+author: "Michelle Law"
+date: '2019-11-03'
+output: github_document
+---
+
+## Load and examine data
+```{r}
+aapl <- read.csv("/Users/michellelaw/Documents/CKME999/8. CKME136 - Capstone Course /A.csv", stringsAsFactors = TRUE)
+head(aapl)
+str(aapl)
+```
+
+## Converting to date format
+```{r}
+aapl$Date <- as.Date(aapl$Date, "%Y-%m-%d")
+head(aapl$Date)
+```
+
+
+## Install relevant packages
+```{r}
+## install.packages("zoo")
+## install.packages("dplyr")
+
+library(zoo) 
+library(dplyr)
+```
+
+## Adding attributes to dataset
+```{r}
+## Adding Simple Moving Attribute as an attribute
+aapl$SMA <- rollmean(aapl$Adj.Close, 3, fill = "extend", FUN = mean)
+
+## Adding attribute that indicates change from previous day
+aapl <- aapl %>% mutate(DiffAdjClose = Adj.Close - lag(Adj.Close))
+
+## Adding Season as an attribute
+months <- as.numeric(format(as.Date(aapl$Date, '%Y-%m-%d'), '%m'))
+indx <- setNames( rep(c('Winter', 'Spring', 'Summer','Fall'),each=3), c(12,1:11))
+aapl$Season <- as.factor(unname(indx[as.character(months)]))
+```
+
+
+# Check for any missing values and replace
+```{r}
+sum(is.na(aapl))
+aapl$DiffAdjClose[1] <- 0
+```
+
+## Check for correlation between attributes
+```{r}
+cor(aapl[2:9])
+```
+
+## Visualization of data spread
+```{r}
+par(mfrow = c(1, 1))
+hist(aapl$Open, main = "Distribution of Opening Prices of Apple Stock")
+hist(aapl$High, main = "Distribution of High Prices of Apple Stock")
+hist(aapl$Low, main = "Distribution of Low Prices of Apple Stock")
+hist(aapl$Close, main = "Distribution of Close Prices of Apple Stock")
+hist(aapl$Adj.Close, main = "Distribution of Adjusted Closing Prices of Apple Stock")
+hist(aapl$Volume, main = "Distribution of Volume of Apple Stock")
+hist(aapl$SMA, main = "Distribution of Simple Moving Average of Apple Stock")
+
+boxplot(aapl$SMA, aapl$Adj.Close, aapl$Low, aapl$High, aapl$Open, main = "Display of Open, High, Low, Close, and SMA", horizontal = TRUE, names = c("SMA", "AdjClose", "Low", "High", "Open"), col = c("beige", "pink", "orange", "yellow", " light green"))
+
+boxplot(aapl$Open,aapl$Close,aapl$SMA, main = "Boxplot of Opening Prices of Apple Stock")
+boxplot(aapl$High, main = "Boxplot of High Prices of Apple Stock")
+boxplot(aapl$Low, main = "Boxplot of Low Prices of Apple Stock")
+boxplot(aapl$Close, main = "Boxplot of Closing Prices of Apple Stock")
+boxplot(aapl$Adj.Close, main = "Boxplot of Adjusted Closing Prices of Apple Stock")
+boxplot(aapl$Volume, main = "Boxplot of Volume of Apple Stock")
+boxplot(aapl$SMA, main = "Boxplot of Simple Moving Average of Apple Stock")
+```
+
+
+## Visualize closing price and simple moving average
+```{r}
+attach(aapl)
+plot(aapl$Date, aapl$Close, type = "l", main = "Closing price of stock")
+lines(aapl$Date, aapl$SMA, type = "l", col = "blue") 
+```
+
+```{r}
+shapiro.test(aapl$Open)
+shapiro.test(aapl$High)
+shapiro.test(aapl$Low)
+shapiro.test(aapl$Close)
+shapiro.test(aapl$Adj.Close)
+## Not normal distribution
+```
+
+
+## Microsoft data for later use
+```{r}
+msft <- read.csv("/Users/michellelaw/Documents/CKME999/8. CKME136 - Capstone Course /MSFT.csv", stringsAsFactors = FALSE)
+
+summary(msft)
+
+msft$Date <- as.Date(msft$Date, "%Y-%m-%d")
+```

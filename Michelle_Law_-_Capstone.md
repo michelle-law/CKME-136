@@ -183,52 +183,46 @@ boxplot(aapl$SMA, aapl$Adj.Close, aapl$Low, aapl$High, aapl$Open, main = "Displa
 ![](Michelle_Law_-_Capstone_files/figure-markdown_github/unnamed-chunk-7-8.png)
 
 ``` r
-boxplot(aapl$Open, aapl$High, aapl$Low, aapl$Adj.Close, aapl$SMA, main = "Display of Open, High, Low, Close, and SMA", horizontal = TRUE, names = c("Open", "High", "Low", "AdjClose", "SMA"), col = c("beige", "pink", "orange", "yellow", " light green"))
+boxplot(aapl$Open,aapl$Close,aapl$SMA, main = "Boxplot of Opening Prices of Apple Stock")
 ```
 
 ![](Michelle_Law_-_Capstone_files/figure-markdown_github/unnamed-chunk-7-9.png)
 
 ``` r
-boxplot(aapl$Open,aapl$Close,aapl$SMA, main = "Boxplot of Opening Prices of Apple Stock")
+boxplot(aapl$High, main = "Boxplot of High Prices of Apple Stock")
 ```
 
 ![](Michelle_Law_-_Capstone_files/figure-markdown_github/unnamed-chunk-7-10.png)
 
 ``` r
-boxplot(aapl$High, main = "Boxplot of High Prices of Apple Stock")
+boxplot(aapl$Low, main = "Boxplot of Low Prices of Apple Stock")
 ```
 
 ![](Michelle_Law_-_Capstone_files/figure-markdown_github/unnamed-chunk-7-11.png)
 
 ``` r
-boxplot(aapl$Low, main = "Boxplot of Low Prices of Apple Stock")
+boxplot(aapl$Close, main = "Boxplot of Closing Prices of Apple Stock")
 ```
 
 ![](Michelle_Law_-_Capstone_files/figure-markdown_github/unnamed-chunk-7-12.png)
 
 ``` r
-boxplot(aapl$Close, main = "Boxplot of Closing Prices of Apple Stock")
+boxplot(aapl$Adj.Close, main = "Boxplot of Adjusted Closing Prices of Apple Stock")
 ```
 
 ![](Michelle_Law_-_Capstone_files/figure-markdown_github/unnamed-chunk-7-13.png)
 
 ``` r
-boxplot(aapl$Adj.Close, main = "Boxplot of Adjusted Closing Prices of Apple Stock")
+boxplot(aapl$Volume, main = "Boxplot of Volume of Apple Stock")
 ```
 
 ![](Michelle_Law_-_Capstone_files/figure-markdown_github/unnamed-chunk-7-14.png)
 
 ``` r
-boxplot(aapl$Volume, main = "Boxplot of Volume of Apple Stock")
-```
-
-![](Michelle_Law_-_Capstone_files/figure-markdown_github/unnamed-chunk-7-15.png)
-
-``` r
 boxplot(aapl$SMA, main = "Boxplot of Simple Moving Average of Apple Stock")
 ```
 
-![](Michelle_Law_-_Capstone_files/figure-markdown_github/unnamed-chunk-7-16.png)
+![](Michelle_Law_-_Capstone_files/figure-markdown_github/unnamed-chunk-7-15.png)
 
 Visualize closing price and simple moving average
 -------------------------------------------------

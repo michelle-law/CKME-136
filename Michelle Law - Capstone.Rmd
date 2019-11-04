@@ -2,7 +2,7 @@
 title: "CKME 136 - Capstone"
 author: "Michelle Law"
 date: '2019-11-03'
-output: html_document
+output: github_document
 ---
 
 ## Load and examine data

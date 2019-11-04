@@ -1,0 +1,165 @@
+---
+title: "CKME 136 - Capstone"
+author: "Michelle Law"
+date: '2019-11-03'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+aapl <- read.csv("/Users/michellelaw/Documents/CKME999/8. CKME136 - Capstone Course /A.csv", stringsAsFactors = TRUE)
+head(aapl)
+str(aapl)
+```
+
+Converting to date format
+```{r}
+aapl$Date <- as.Date(aapl$Date, "%Y-%m-%d")
+head(aapl$Date)
+```
+
+
+#install.packages("tidyverse")
+#install.packages("lubridate")
+#install.packages("fpp2")
+install.packages("zoo")
+install.packages("dplyr")
+
+#library(tidyverse)     
+#library(lubridate)     
+#library(fpp2)        
+library(zoo) 
+library(dplyr)
+
+
+
+## Adding Simple Moving Attribute as an attribute
+aapl$SMA <- rollmean(aapl$Adj.Close, 3, fill = "extend", FUN = mean)
+
+## Adding attribute that indicates change from previous day
+aapl <- aapl %>% mutate(DiffAdjClose = Adj.Close - lag(Adj.Close))
+
+## Adding Season as an attribute
+months <- as.numeric(format(as.Date(aapl$Date, '%Y-%m-%d'), '%m'))
+indx <- setNames( rep(c('Winter', 'Spring', 'Summer','Fall'),each=3), c(12,1:11))
+aapl$Season <- as.factor(unname(indx[as.character(months)]))
+
+
+
+# Check for any missing values
+sum(is.na(aapl))
+aapl$DiffAdjClose[1] <- 0
+
+## Check for correlation between attributes
+cor(aapl[2:9])
+
+summary(aapl$Close)
+
+## Visualization of data spread
+par(mfrow = c(1, 1))
+hist(aapl$Open, main = "Distribution of Opening Prices of Apple Stock")
+hist(aapl$High, main = "Distribution of High Prices of Apple Stock")
+hist(aapl$Low, main = "Distribution of Low Prices of Apple Stock")
+hist(aapl$Close, main = "Distribution of Close Prices of Apple Stock")
+hist(aapl$Adj.Close, main = "Distribution of Adjusted Closing Prices of Apple Stock")
+hist(aapl$Volume, main = "Distribution of Volume of Apple Stock")
+hist(aapl$SMA, main = "Distribution of Simple Moving Average of Apple Stock")
+
+boxplot(aapl$SMA, aapl$Adj.Close, aapl$Low, aapl$High, aapl$Open, main = "Display of Open, High, Low, Close, and SMA", horizontal = TRUE, names = c("SMA", "AdjClose", "Low", "High", "Open"), col = c("beige", "pink", "orange", "yellow", " light green"))
+boxplot(aapl$Open, aapl$High, aapl$Low, aapl$Adj.Close, aapl$SMA, main = "Display of Open, High, Low, Close, and SMA", horizontal = TRUE, names = c("Open", "High", "Low", "AdjClose", "SMA"), col = c("beige", "pink", "orange", "yellow", " light green"))
+boxplot(aapl$Open,aapl$Close,aapl$SMA, main = "Boxplot of Opening Prices of Apple Stock")
+boxplot(aapl$High, main = "Boxplot of High Prices of Apple Stock")
+boxplot(aapl$Low, main = "Boxplot of Low Prices of Apple Stock")
+boxplot(aapl$Close, main = "Boxplot of Closing Prices of Apple Stock")
+boxplot(aapl$Adj.Close, main = "Boxplot of Adjusted Closing Prices of Apple Stock")
+boxplot(aapl$Volume, main = "Boxplot of Volume of Apple Stock")
+boxplot(aapl$SMA, main = "Boxplot of Simple Moving Average of Apple Stock")
+
+plot(aapl$Open, aapl$SMA)
+attach(aapl)
+
+## Code from
+panel.cor <- function(x, y, digits=2, prefix="", cex.cor) 
+{
+  usr <- par("usr"); on.exit(par(usr)) 
+  par(usr = c(0, 1, 0, 1)) 
+  r <- abs(cor(x, y)) 
+  txt <- format(c(r, 0.123456789), digits=digits)[1] 
+  txt <- paste(prefix, txt, sep="") 
+  if(missing(cex.cor)) cex <- 0.8/strwidth(txt) 
+  
+  test <- cor.test(x,y) 
+  # borrowed from printCoefmat
+  Signif <- symnum(test$p.value, corr = FALSE, na = FALSE, 
+                   cutpoints = c(0, 0.001, 0.01, 0.05, 0.1, 1),
+                   symbols = c("***", "**", "*", ".", " ")) 
+  
+  text(0.5, 0.5, txt, cex = cex * r) 
+  text(.8, .8, Signif, cex=cex, col=2) 
+}
+# Assign a value USDA_Selected_Featuers that represents
+# "Calories","Carbohydrate","Protein","TotalFat", "Sodium" columns
+###################################################
+##### Complete code here and uncomment it
+aaplmod <- data.frame(aapl$Open, aapl$High, aapl$Low, aapl$Adj.Close, aapl$SMA)
+###################################################
+
+#### Uncomment the following line when you assign USDA_Selected_Featuers to show the results
+pairs(aaplmod, lower.panel=panel.smooth, upper.panel=panel.cor)
+
+
+plot(~aapl$Date + aapl$Close , main = "Closing price of stock" , pch =1)
+
+install.packages("car")
+library("car")
+scatterplotMatrix(formula= ~ Close + Open + High + Low + Volume,cex=0.8)
+
+
+## Visualize closing price and simple moving average
+plot(aapl$Date, aapl$Close, type = "l", main = "Closing price of stock")
+lines(aapl$Date, aapl$SMA, type = "l", col = "blue") 
+
+
+
+
+
+plot(aapl$Date, aapl$High, type = "l")
+plot(aapl$Date, aapl18$Low, type = "l")
+plot(aapl18$Date, aapl18$Close, type = "l")
+plot(aapl18$Date, aapl18$Adj.Close, type = "l")
+plot(aapl18$Date, aapl18$Volume, type = "l")
+
+
+shapiro.test(aapl$Open)
+shapiro.test(aapl$High)
+shapiro.test(aapl$Low)
+shapiro.test(aapl$Close)
+shapiro.test(aapl$Adj.Close)
+## Not normal distribution
+
+shapiro.test(aapl18$Open)
+shapiro.test(aapl18$High)
+shapiro.test(aapl18$Low)
+shapiro.test(aapl18$Close)
+shapiro.test(aapl18$Adj.Close)
+## Not normal
+
+#########################################################################################################################
+msft <- read.csv("/Users/michellelaw/Documents/CKME999/8. CKME136 - Capstone Course /MSFT.csv", stringsAsFactors = FALSE)
+
+summary(msft)
+
+msft$Date <- as.Date(msft$Date, "%Y-%m-%d")

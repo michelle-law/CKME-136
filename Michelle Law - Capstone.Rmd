@@ -67,7 +67,7 @@ hist(aapl$SMA, main = "Distribution of Simple Moving Average of Apple Stock")
 
 boxplot(aapl$SMA, aapl$Adj.Close, aapl$Low, aapl$High, aapl$Open, main = "Display of Open, High, Low, Close, and SMA", horizontal = TRUE, names = c("SMA", "AdjClose", "Low", "High", "Open"), col = c("beige", "pink", "orange", "yellow", " light green"))
 
-boxplot(aapl$Open,aapl$Close,aapl$SMA, main = "Boxplot of Opening Prices of Apple Stock")
+boxplot(aapl$Open, main = "Boxplot of Opening Prices of Apple Stock")
 boxplot(aapl$High, main = "Boxplot of High Prices of Apple Stock")
 boxplot(aapl$Low, main = "Boxplot of Low Prices of Apple Stock")
 boxplot(aapl$Close, main = "Boxplot of Closing Prices of Apple Stock")

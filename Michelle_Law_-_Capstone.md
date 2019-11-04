@@ -183,7 +183,7 @@ boxplot(aapl$SMA, aapl$Adj.Close, aapl$Low, aapl$High, aapl$Open, main = "Displa
 ![](Michelle_Law_-_Capstone_files/figure-markdown_github/unnamed-chunk-7-8.png)
 
 ``` r
-boxplot(aapl$Open,aapl$Close,aapl$SMA, main = "Boxplot of Opening Prices of Apple Stock")
+boxplot(aapl$Open, main = "Boxplot of Opening Prices of Apple Stock")
 ```
 
 ![](Michelle_Law_-_Capstone_files/figure-markdown_github/unnamed-chunk-7-9.png)

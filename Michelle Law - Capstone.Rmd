@@ -7,7 +7,7 @@ output: github_document
 
 ## Load and examine data
 ```{r}
-aapl <- read.csv("/Users/michellelaw/Documents/CKME999/8. CKME136 - Capstone Course /A.csv", stringsAsFactors = TRUE)
+aapl <- read.csv("/Users/michellelaw/Documents/CKME999/8. CKME136 - Capstone Course /AAPL.csv", stringsAsFactors = TRUE)
 head(aapl)
 str(aapl)
 summary(aapl)
@@ -24,23 +24,48 @@ head(aapl$Date)
 ```{r}
 ## install.packages("zoo")
 ## install.packages("dplyr")
+## install.packages("quantmod")
+## install.packages("gtools")
 
 library(zoo) 
 library(dplyr)
+library(quantmod)
+library(gtools)
 ```
 
 ## Adding attributes to dataset
 ```{r}
-## Adding Simple Moving Attribute as an attribute
-aapl$SMA <- rollmean(aapl$Adj.Close, 3, fill = "extend", FUN = mean)
-
-## Adding attribute that indicates change from previous day
-aapl <- aapl %>% mutate(DiffAdjClose = Adj.Close - lag(Adj.Close))
 
 ## Adding Season as an attribute
 months <- as.numeric(format(as.Date(aapl$Date, '%Y-%m-%d'), '%m'))
 indx <- setNames( rep(c('Winter', 'Spring', 'Summer','Fall'),each=3), c(12,1:11))
 aapl$Season <- as.factor(unname(indx[as.character(months)]))
+
+## Adding attribute that indicates change from previous day
+aapl$DiffClose <- momentum(aapl$Close, n = 1)
+
+## Adding Simple Moving Attribute as an attribute
+aapl$SMA <- SMA(aapl$Close, n = 3)
+
+## Adding MACD as an attribute. If MACD goes above the signal line we long, if it goes below the signal line we short.
+macd <- MACD(aapl$Close, nFast=12, nSlow=26,nSig=9,maType=SMA, percent = FALSE)
+aapl <- data.frame(aapl, macd)
+
+## Adding Exponential Moving Average as an attribute
+aapl$EMA <- EMA(aapl$Close, n = 3)
+
+## Adding Momentum as an attribute
+aapl$momentum <- momentum(aapl$Close, n = 3)
+
+## Adding ROC as an attribute
+aapl$ROC <- ROC(aapl$Close, n = 2)
+
+## Adding RSI as an attribute
+aapl$RSI <- RSI(aapl$Close, n = 7)
+
+## Adding Bollinger Band as an attribute
+BB <- BBands(aapl[,c("High", "Low", "Close")], n = 3, s.d = 2)
+aapl <- data.frame(aapl, BB)
 
 head(aapl)
 str(aapl)
@@ -50,26 +75,73 @@ summary(aapl)
 
 # Check for any missing values and replace
 ```{r}
+sum(is.na(aapl[1:8]))
+
+sum(is.na(aapl$DiffClose))
+hist(aapl$DiffClose)
+mean(aapl$DiffClose, na.rm = TRUE)
+## Since the mean is normally distributed, I will replace the missing value with the mean of 1.15
+aapl$DiffClose[1] <- mean(aapl$DiffClose, na.rm = TRUE)
+
+sum(is.na(aapl$SMA))
+hist(aapl$SMA[1:52])
+## Since the simple moving average takes into account the prices from a window of 3 days, I decided to replace the first two missing attributes with the average of the prices of the first 3 days.
+aapl$SMA[1:2] <- mean(aapl$Close[1:3])
+
+sum(is.na(aapl$macd))
+hist(aapl$macd)
+aapl$macd[1:25] <- median(aapl$macd, na.rm = TRUE)
+
+sum(is.na(aapl$signal))
+hist(aapl$signal)
+aapl$signal[1:33] <- mean(aapl$signal, na.rm = TRUE)
+
+sum(is.na(aapl$EMA))
+hist(aapl$EMA)
+aapl$EMA[1:2] <- mean(aapl$Close[1:3])
+
+sum(is.na(aapl$momentum))
+hist(aapl$momentum)
+aapl$momentum[1:3] <- mean(aapl$momentum, na.rm = TRUE)
+
+sum(is.na(aapl$ROC))
+hist(aapl$ROC)
+aapl$ROC[1:2] <- mean(aapl$ROC, na.rm = TRUE)
+
+sum(is.na(aapl$RSI))
+hist(aapl$RSI)
+aapl$RSI[1:7] <- median(aapl$RSI, na.rm = TRUE)
+
+sum(is.na(aapl$dn))
+hist(aapl$dn)
+aapl$dn[1:2] <- aapl$dn[3]
+
+sum(is.na(aapl$mavg))
+hist(aapl$dn)
+aapl$mavg[1:2] <- aapl$mavg[3]
+
+sum(is.na(aapl$up))
+hist(aapl$up)
+aapl$up[1:2] <- aapl$up[3]
+
+sum(is.na(aapl$pctB))
+hist(aapl$pctB)
+aapl$pctB[1:2] <- aapl$pctB[3]
+
 sum(is.na(aapl))
-aapl$DiffAdjClose[1] <- 0
-sum(is.na(aapl))
+
 ```
 
 ## Check for correlation between attributes
 ```{r}
-cor(aapl[2:9])
+nodate <- aapl[,2:20]
+aaplnum <- nodate[-7]
+
+cor(aaplnum)
 ```
 
 ## Visualization of data spread
 ```{r}
-par(mfrow = c(1, 1))
-hist(aapl$Open, main = "Distribution of Opening Prices of Apple Stock")
-hist(aapl$High, main = "Distribution of High Prices of Apple Stock")
-hist(aapl$Low, main = "Distribution of Low Prices of Apple Stock")
-hist(aapl$Close, main = "Distribution of Close Prices of Apple Stock")
-hist(aapl$Adj.Close, main = "Distribution of Adjusted Closing Prices of Apple Stock")
-hist(aapl$Volume, main = "Distribution of Volume of Apple Stock")
-hist(aapl$SMA, main = "Distribution of Simple Moving Average of Apple Stock")
 
 boxplot(aapl$SMA, aapl$Adj.Close, aapl$Low, aapl$High, aapl$Open, main = "Display of Open, High, Low, Close, and SMA", horizontal = TRUE, names = c("SMA", "AdjClose", "Low", "High", "Open"), col = c("beige", "pink", "orange", "yellow", " light green"))
 
@@ -85,10 +157,24 @@ boxplot(aapl$SMA, main = "Boxplot of Simple Moving Average of Apple Stock")
 
 ## Visualize closing price and simple moving average
 ```{r}
-attach(aapl)
+
 plot(aapl$Date, aapl$Close, type = "l", main = "Closing price of stock")
 lines(aapl$Date, aapl$SMA, type = "l", col = "blue") 
+
+aaplxts <- xts(aapl$Close, aapl$Date)
+chartSeries(aaplxts, TA="addMACD()", theme = "white")
 ```
+
+```{r}
+attach(aapl)
+plot(aapl$Date, aapl$Close, type = "l")
+##curve(predict(model,aapl$Close,type="resp"),add=TRUE)
+
+model <- glm(Close ~ Open + High + Low + DiffClose + SMA + macd + signal + EMA + momentum + ROC + RSI + dn + mavg + pctB, data = aapl)
+summary(model)
+
+```
+
 
 ```{r}
 shapiro.test(aapl$Open)

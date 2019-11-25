@@ -4,7 +4,9 @@ author: "Michelle Law"
 date: '2019-11-03'
 output: github_document
 ---
-
+```{r, echo=FALSE}
+knitr::opts_chunk$set(error = TRUE)
+```
 ## Load and examine data
 ```{r}
 aapl <- read.csv("/Users/michellelaw/Documents/CKME999/8. CKME136 - Capstone Course /AAPL.csv", stringsAsFactors = TRUE)
@@ -22,24 +24,23 @@ head(aapl$Date)
 
 ## Install relevant packages
 ```{r}
-## install.packages("zoo")
-## install.packages("dplyr")
-## install.packages("quantmod")
-## install.packages("gtools")
-
-library(zoo) 
-library(dplyr)
+#install.packages("quantmod")
 library(quantmod)
-library(gtools)
+#install.packages("arules")
+library(arules)
+#install.packages("randomForest")
+library(randomForest)
+#install.packages("caret")
+library(caret)
+#install.packages("nnet")
+library(nnet)
+#install.packages("e1071")
+library(e1071)
+
 ```
 
 ## Adding attributes to dataset
 ```{r}
-
-## Adding Season as an attribute
-months <- as.numeric(format(as.Date(aapl$Date, '%Y-%m-%d'), '%m'))
-indx <- setNames( rep(c('Winter', 'Spring', 'Summer','Fall'),each=3), c(12,1:11))
-aapl$Season <- as.factor(unname(indx[as.character(months)]))
 
 ## Adding attribute that indicates change from previous day
 aapl$DiffClose <- momentum(aapl$Close, n = 1)
@@ -48,7 +49,7 @@ aapl$DiffClose <- momentum(aapl$Close, n = 1)
 aapl$SMA <- SMA(aapl$Close, n = 3)
 
 ## Adding MACD as an attribute. If MACD goes above the signal line we long, if it goes below the signal line we short.
-macd <- MACD(aapl$Close, nFast=12, nSlow=26,nSig=9,maType=SMA, percent = FALSE)
+macd <- MACD(aapl$Close, nFast=12, nSlow=26,nSig=9,maType="SMA", percent = FALSE)
 aapl <- data.frame(aapl, macd)
 
 ## Adding Exponential Moving Average as an attribute
@@ -56,9 +57,6 @@ aapl$EMA <- EMA(aapl$Close, n = 3)
 
 ## Adding Momentum as an attribute
 aapl$momentum <- momentum(aapl$Close, n = 3)
-
-## Adding ROC as an attribute
-aapl$ROC <- ROC(aapl$Close, n = 2)
 
 ## Adding RSI as an attribute
 aapl$RSI <- RSI(aapl$Close, n = 7)
@@ -71,126 +69,392 @@ head(aapl)
 str(aapl)
 summary(aapl)
 ```
+## Since I am trying to predict the closing price, I will have to use the previous day's complete data because High, Low, Adj. Close and all the technical indicators will only be availble after the day has ended. I will lag the attributes used in the prediction by 1 day.
+```{r}
+u <- rbind(NA, aapl[,3:18])
+i <- aapl[1:2]
 
+aapl <- cbind(i, u[1:1258,])
+```
 
 # Check for any missing values and replace
 ```{r}
-sum(is.na(aapl[1:8]))
+sum(is.na(aapl[1:2]))
+
+## For the attributes High, Low, Close, Adj. Close and Volume, I investigated the mean and median for the entire data set and for just the first year but both values were an inaccurate representation for that period in time. Therefore, I replaced the NA values with the next day's value.
+hist(aapl$High[1:64])
+median(aapl$High[1:64], na.rm = TRUE)
+aapl$High[1] <- aapl$High[2]
+
+hist(aapl$Low[1:64])
+median(aapl$Low[1:64], na.rm = TRUE)
+aapl$Low[1] <- aapl$Low[2]
+
+hist(aapl$Close[1:64])
+median(aapl$Close[1:64], na.rm = TRUE)
+aapl$Close[1] <- aapl$Close[2]
+
+hist(aapl$Adj.Close[1:64])
+median(aapl$Adj.Close[1:64], na.rm = TRUE)
+aapl$Adj.Close[1] <- aapl$Adj.Close[2]
+
+hist(aapl$Volume[1:64])
+median(aapl$Volume[1:64], na.rm = TRUE)
+aapl$Volume[1] <- aapl$Volume[2]
 
 sum(is.na(aapl$DiffClose))
 hist(aapl$DiffClose)
 mean(aapl$DiffClose, na.rm = TRUE)
-## Since the mean is normally distributed, I will replace the missing value with the mean of 1.15
-aapl$DiffClose[1] <- mean(aapl$DiffClose, na.rm = TRUE)
+## Since this indicates the difference in closing price, it will just indicate 0 for the first row.
+aapl$DiffClose[1:2] <- 0
 
 sum(is.na(aapl$SMA))
-hist(aapl$SMA[1:52])
-## Since the simple moving average takes into account the prices from a window of 3 days, I decided to replace the first two missing attributes with the average of the prices of the first 3 days.
-aapl$SMA[1:2] <- mean(aapl$Close[1:3])
+hist(aapl$SMA[1:64])
+## Since the simple moving average takes into account the prices from a window of 3 days, I decided to replace the first two missing attributes with the average of the prices of the first 3 days of real data.
+aapl$SMA[1:3] <- mean(aapl$Close[2:4])
 
 sum(is.na(aapl$macd))
 hist(aapl$macd)
-aapl$macd[1:25] <- median(aapl$macd, na.rm = TRUE)
+aapl$macd[1:26] <- median(aapl$macd, na.rm = TRUE)
 
 sum(is.na(aapl$signal))
 hist(aapl$signal)
-aapl$signal[1:33] <- mean(aapl$signal, na.rm = TRUE)
+aapl$signal[1:34] <- median(aapl$signal, na.rm = TRUE)
 
 sum(is.na(aapl$EMA))
 hist(aapl$EMA)
-aapl$EMA[1:2] <- mean(aapl$Close[1:3])
+aapl$EMA[1:3] <- mean(aapl$Close[2:4])
 
 sum(is.na(aapl$momentum))
 hist(aapl$momentum)
-aapl$momentum[1:3] <- mean(aapl$momentum, na.rm = TRUE)
+aapl$momentum[1:4] <- mean(aapl$momentum, na.rm = TRUE)
 
-sum(is.na(aapl$ROC))
-hist(aapl$ROC)
-aapl$ROC[1:2] <- mean(aapl$ROC, na.rm = TRUE)
 
 sum(is.na(aapl$RSI))
 hist(aapl$RSI)
-aapl$RSI[1:7] <- median(aapl$RSI, na.rm = TRUE)
+aapl$RSI[1:8] <- median(aapl$RSI, na.rm = TRUE)
 
 sum(is.na(aapl$dn))
 hist(aapl$dn)
-aapl$dn[1:2] <- aapl$dn[3]
+aapl$dn[1:3] <- aapl$dn[4]
 
 sum(is.na(aapl$mavg))
 hist(aapl$dn)
-aapl$mavg[1:2] <- aapl$mavg[3]
+aapl$mavg[1:3] <- aapl$mavg[4]
 
 sum(is.na(aapl$up))
 hist(aapl$up)
-aapl$up[1:2] <- aapl$up[3]
+aapl$up[1:3] <- aapl$up[4]
 
 sum(is.na(aapl$pctB))
 hist(aapl$pctB)
-aapl$pctB[1:2] <- aapl$pctB[3]
+aapl$pctB[1:3] <- aapl$pctB[4]
 
 sum(is.na(aapl))
-
 ```
-
 ## Check for correlation between attributes
 ```{r}
-nodate <- aapl[,2:20]
-aaplnum <- nodate[-7]
+nodate <- aapl[,2:18]
 
-cor(aaplnum)
+## Since Volume, DiffClose, and momentum are weak indicators, these attributes will be removed from the analysis. Although MACD (made up of both MACD and signal attributes) show a weak correlation I decided to keep them as research indicates that they are strong indicators.
+
+aapl <- aapl[-7:-8]
+aapl <- aapl[-11]
+
 ```
 
-## Visualization of data spread
+## Check for percentage outliers of remaining attributes
 ```{r}
+attach(aapl)
+summary(aapl)
 
-boxplot(aapl$SMA, aapl$Adj.Close, aapl$Low, aapl$High, aapl$Open, main = "Display of Open, High, Low, Close, and SMA", horizontal = TRUE, names = c("SMA", "AdjClose", "Low", "High", "Open"), col = c("beige", "pink", "orange", "yellow", " light green"))
+boxplot(Open, main = "Boxplot of Opening Prices of Apple Stock")
+boxplot(High, main = "Boxplot of High Prices of Apple Stock")
+boxplot(Low, main = "Boxplot of Low Prices of Apple Stock")
+boxplot(Close, main = "Boxplot of Closing Prices of Apple Stock")
+boxplot(Adj.Close, main = "Boxplot of Adjusted Closing Prices of Apple Stock")
+boxplot(SMA, main = "Boxplot of Simple Moving Average of Apple Stock")
+boxplot(macd, main = "Boxplot of Moving Average Convergence Divergence")
+boxplot(EMA, main = "Boxplot of Exponential Moving Average of Apple Stock")
+boxplot(RSI, main = "Boxplot of Relative Strength Index of Apple Stock")
+boxplot(BB, main = "Boxplot of Bollinger Band")
+boxplot(pctB, main = "Boxplot of %B calculation in Bollinger Band of Apple Stock")
 
-boxplot(aapl$Open, main = "Boxplot of Opening Prices of Apple Stock")
-boxplot(aapl$High, main = "Boxplot of High Prices of Apple Stock")
-boxplot(aapl$Low, main = "Boxplot of Low Prices of Apple Stock")
-boxplot(aapl$Close, main = "Boxplot of Closing Prices of Apple Stock")
-boxplot(aapl$Adj.Close, main = "Boxplot of Adjusted Closing Prices of Apple Stock")
-boxplot(aapl$Volume, main = "Boxplot of Volume of Apple Stock")
-boxplot(aapl$SMA, main = "Boxplot of Simple Moving Average of Apple Stock")
+
 ```
-
 
 ## Visualize closing price and simple moving average
 ```{r}
-
-plot(aapl$Date, aapl$Close, type = "l", main = "Closing price of stock")
-lines(aapl$Date, aapl$SMA, type = "l", col = "blue") 
-
 aaplxts <- xts(aapl$Close, aapl$Date)
-chartSeries(aaplxts, TA="addMACD()", theme = "white")
+chartSeries(aaplxts, TA = "addSMA()", theme = "white")
 ```
 
+## Visualize closing price and exponential moving average
 ```{r}
-attach(aapl)
-plot(aapl$Date, aapl$Close, type = "l")
-##curve(predict(model,aapl$Close,type="resp"),add=TRUE)
-
-model <- glm(Close ~ Open + High + Low + DiffClose + SMA + macd + signal + EMA + momentum + ROC + RSI + dn + mavg + pctB, data = aapl)
-summary(model)
-
+chartSeries(aaplxts, TA = "addEMA()", theme = "white")
 ```
 
-
+## Visualize closing price and moving average convergence divergence 
 ```{r}
-shapiro.test(aapl$Open)
-shapiro.test(aapl$High)
-shapiro.test(aapl$Low)
-shapiro.test(aapl$Close)
-shapiro.test(aapl$Adj.Close)
-## Not normal distribution
+chartSeries(aaplxts, TA = "addMACD()", theme = "white")
 ```
-
-
-## Microsoft data for later use
+## Visualize closing price and bollingers band
 ```{r}
-msft <- read.csv("/Users/michellelaw/Documents/CKME999/8. CKME136 - Capstone Course /MSFT.csv", stringsAsFactors = FALSE)
-
-summary(msft)
-
-msft$Date <- as.Date(msft$Date, "%Y-%m-%d")
+chartSeries(aaplxts, TA = "addBBands()", theme = "white")
 ```
+
+## Discretize Data and attach to data frame
+```{r}
+aapldisc <- discretizeDF(aapl, method = list(Close = list(method = "interval", breaks = 5)), default = list(method = "interval"))
+summary(aapldisc)
+aapl$discClose <- aapldisc$Close
+table(aapl$discClose)
+```
+## Split data into training and test set
+```{r}
+## The 1st year will be taken and tested on the 2nd year, then the 2nd year will be added to the first year and tested on the 3rd and so on. The year periods run from the first business day in October to the last business day in September of the following year.
+trainaaplA <- aapl[1:252,]
+trainaaplB <- aapl[1:505,]
+trainaaplC <- aapl[1:756,]
+trainaaplD <- aapl[1:1007,]
+
+table(aapl$discClose[1:252])
+trainaaplA$discClose <- droplevels(trainaaplA$discClose)
+trainaaplB$discClose <- droplevels(trainaaplB$discClose)
+trainaaplC$discClose <- droplevels(trainaaplC$discClose)
+trainaaplD$discClose <- droplevels(trainaaplD$discClose)
+
+## Remove predictive class from test set as well
+testaaplA <- aapl[253:505, -16]
+testaaplB <- aapl[506:756, -16]
+testaaplC <- aapl[757:1007, -16]
+testaaplD <- aapl[1008:1258, -16]
+
+```
+
+## Logistic Regression
+```{r}
+class(aapl$discClose)
+aapllogitA <- multinom(discClose ~ ., data = trainaaplA)
+summary(aapllogitA)
+
+predictaaplA <- predict(aapllogitA, testaaplA)
+
+resultsA <- aapl[253:505,]
+resultsA <- data.frame(resultsA, predictaaplA)
+plot(resultsA$Date, resultsA$discClose, type = "p", col = "Red")
+lines(resultsA$Date, resultsA$predictaaplA, type = "p", col = "Blue")
+
+confusionMatrix(resultsA$predictaaplA, resultsA$discClose, mode = "prec_recall")
+mean(c(.9755, 1))#Precision
+mean(c(1, 0.57143)) #Recall
+mean(c(.9876, .72727)) #Fmeasure
+```
+```{r}
+class(aapl$discClose)
+aapllogitB <- multinom(discClose ~ ., data = trainaaplB)
+summary(aapllogitB)
+
+predictaaplB <- predict(aapllogitB, testaaplB)
+(predictaaplB)
+
+resultsB <- aapl[506:756,]
+resultsB <- data.frame(resultsB, predictaaplB)
+plot(resultsB$Date, resultsB$discClose, type = "p", col = "Red")
+lines(resultsB$Date, resultsB$predictaapl, type = "p", col = "Blue")
+
+confusionMatrix(resultsB$predictaapl, resultsB$discClose, mode = "prec_recall")
+mean(c(1, .5401))#Precision
+mean(c(1, .9412, 0)) #Recall
+mean(c(.9697, .7014)) #Fmeasure
+```
+```{r}
+aapllogitC <- multinom(discClose ~ ., data = trainaaplC)
+summary(aapllogitC)
+
+predictaaplC <- predict(aapllogitC, testaaplC)
+(predictaaplC)
+
+resultsC <- aapl[757:1007,]
+resultsC <- data.frame(resultsC, predictaaplC)
+plot(resultsC$Date, resultsC$discClose, type = "p", col = "Red")
+lines(resultsC$Date, resultsC$predictaaplC, type = "p", col = "Blue")
+
+confusionMatrix(resultsC$predictaapl, resultsC$discClose, mode = "prec_recall")
+mean(c(.4781))#Precision
+mean(c(1,0, 0)) #Recall
+mean(c(.6469)) #Fmeasure
+```
+```{r}
+aapllogitD <- multinom(discClose ~ ., data = trainaaplD)
+summary(aapllogitD)
+
+predictaaplD <- predict(aapllogitD, testaaplD)
+(predictaaplD)
+
+resultsD <- aapl[1008:1258,]
+resultsD <- data.frame(resultsD, predictaaplD)
+plot(resultsD$Date, resultsD$discClose, type = "p", col = "Red")
+lines(resultsD$Date, resultsD$predictaaplD, type = "p", col = "Blue")
+
+confusionMatrix(resultsD$predictaapl, resultsD$discClose, mode = "prec_recall")
+mean(c(.222222, 1, .5789, 1))#Precision
+mean(c(1,.7812, 1)) #Recall
+mean(c(.363636, .8772, .7333)) #Fmeasure
+```
+
+## Random Forest
+```{r}
+aaplrf5 <- randomForest(discClose ~ ., ntree = 501, data = trainaaplD)
+plot(aaplrf5)
+## Since this plot shows the error rates going flat at approximately 300 trees, I will use 300 trees in my algorithm
+
+aaplrf3 <- randomForest(discClose ~ ., ntree = 301, data = trainaaplA, na.action = na.omit)
+
+predictaaplrfA <- predict(aaplrf3, testaaplA)
+summary(predictaaplrfA)
+
+resultsrfA <- aapl[253:505,]
+resultsrfA <- data.frame(resultsrfA, predictaaplrfA)
+plot(resultsrfA$Date, resultsrfA$discClose, type = "o", col = "Red")
+lines(resultsrfA$Date, resultsrfA$predictaaplrfA, type = "p", col = "Blue")
+
+confusionMatrix(resultsrfA$predictaaplrfA, resultsrfA$discClose, mode = "prec_recall")
+mean(c(1))#Precision
+mean(c(1)) #Recall
+mean(c(1)) #Fmeasure)
+
+```
+```{r}
+aaplrf3B <- randomForest(discClose ~ ., ntree = 301, data = trainaaplB, na.action = na.omit)
+plot(aaplrf3B)
+
+predictaaplrfB <- predict(aaplrf3B, testaaplB)
+summary(predictaaplrfB)
+
+resultsrfB <- aapl[506:756,]
+resultsrfB <- data.frame(resultsrfB, predictaaplrfB)
+plot(resultsrfB$Date, resultsrfB$discClose, type = "o", col = "Red")
+lines(resultsrfB$Date, resultsrfB$predictaaplrfB, type = "p", col = "Blue")
+
+confusionMatrix(resultsrfB$predictaaplrfB, resultsrfB$discClose, mode = "prec_recall")
+mean(c(1, .5519))#Precision
+mean(c(1, 0, 1)) #Recall
+mean(c(1, .7113)) #Fmeasure)
+
+```
+```{r}
+aaplrf3C <- randomForest(discClose ~ ., ntree = 301, data = trainaaplC)
+plot(aaplrf3C)
+
+predictaaplrfC <- predict(aaplrf3C, testaaplC)
+summary(predictaaplrfC)
+
+resultsrfC <- aapl[757:1007,]
+resultsrfC <- data.frame(resultsrfC, predictaaplrfC)
+plot(resultsrfC$Date, resultsrfC$discClose, type = "o", col = "Red")
+lines(resultsrfC$Date, resultsrfC$predictaaplrfC, type = "p", col = "Blue")
+
+confusionMatrix(resultsrfC$predictaaplrfC, resultsrfC$discClose, mode = "prec_recall")
+mean(c(.4781))#Precision
+mean(c(1, 0, 1)) #Recall
+mean(c(.6469)) #Fmeasure
+
+```
+```{r}
+aaplrf3D <- randomForest(discClose ~ ., ntree = 301, data = trainaaplD)
+plot(aaplrf3D)
+
+predictaaplrfD <- predict(aaplrf3D, testaaplD)
+summary(predictaaplrfD)
+
+resultsrfD <- aapl[1008:1258,]
+resultsrfD <- data.frame(resultsrfD, predictaaplrfD)
+plot(resultsrfD$Date, resultsrfD$discClose, type = "o", col = "Red")
+lines(resultsrfD$Date, resultsrfD$predictaaplrfD, type = "p", col = "Blue")
+
+confusionMatrix(resultsrfD$predictaaplrfD, resultsrfD$discClose, mode = "prec_recall")
+mean(c(1, .9844, .9873, .8037))#Precision
+mean(c(.5, .9844, .7879, 1)) #Recall
+mean(c(.666667, .9844, .8764, .8912)) #Fmeasure
+```
+
+## Support Vector Regression
+```{r}
+modelsvrA <- svm(discClose ~ ., data = trainaaplA)
+summary(modelsvrA)
+
+predictaaplsvrA <- predict(modelsvrA, testaaplA)
+summary(predictaaplA)
+
+resultssvrA <- aapl[253:505,]
+resultssvrA <- data.frame(resultssvrA, predictaaplsvrA)
+
+plot(resultssvrA$Date, resultssvrA$discClose, type = "o", col = "blue", xlab = "Test Set October 2018 to September 2019")
+lines(resultssvrA$Date, resultssvrA$predictaaplsvrA, type = "p", col = "red")
+
+confusionMatrix(resultssvrA$predictaaplsvrA, resultssvrA$discClose, mode = "prec_recall")
+mean(c(1, .9755))#Precision
+mean(c(1, .57143)) #Recall
+mean(c(.9876, .72727)) #Fmeasure
+
+```
+```{r}
+modelsvrB <- svm(discClose ~ ., data = trainaaplB)
+summary(modelsvrB)
+
+predictaaplsvrB <- predict(modelsvrB, testaaplB)
+summary(predictaaplB)
+
+resultssvrB <- aapl[506:756,]
+resultssvrB <- data.frame(resultssvrB, predictaaplsvrB)
+
+plot(resultssvrB$Date, resultssvrB$discClose, type = "o", col = "blue", xlab = "Test Set October 2018 to September 2019")
+lines(resultssvrB$Date, resultssvrB$predictaaplsvrB, type = "p", col = "red")
+
+confusionMatrix(resultssvrB$predictaaplsvrB, resultssvrB$discClose, mode = "prec_recall")
+mean(c(1, .3105))#Precision
+mean(c(1, .3168, 0)) #Recall
+mean(c(.4739, .4812)) #Fmeasure
+
+```
+```{r}
+modelsvrC <- svm(discClose ~ ., data = trainaaplC)
+summary(modelsvrC)
+
+predictaaplsvrC <- predict(modelsvrC, testaaplC)
+summary(predictaaplC)
+
+resultssvrC <- aapl[757:1007,]
+resultssvrC <- data.frame(resultssvrC, predictaaplsvrC)
+
+plot(resultssvrC$Date, resultssvrC$discClose, type = "o", col = "blue", xlab = "Test Set October 2018 to September 2019")
+lines(resultssvrC$Date, resultssvrC$predictaaplsvrC, type = "p", col = "red")
+
+confusionMatrix(resultssvrC$predictaaplsvrC, resultssvrC$discClose, mode = "prec_recall")
+mean(c(0, 0.8))#Precision
+mean(c(1, 0, 0)) #Recall
+mean(c(.8889)) #Fmeasure
+
+```
+```{r}
+modelsvrD <- svm(discClose ~ ., data = trainaaplD)
+summary(modelsvrD)
+
+predictaaplsvrD <- predict(modelsvrD, testaaplD)
+summary(predictaaplD)
+
+resultssvrD <- aapl[1008:1258,]
+resultssvrD <- data.frame(resultssvrD, predictaaplsvrD)
+
+plot(resultssvrD$Date, resultssvrD$discClose, type = "o", col = "blue", xlab = "Test Set October 2018 to September 2019")
+lines(resultssvrD$Date, resultssvrD$predictaaplsvrD, type = "p", col = "red")
+
+confusionMatrix(resultssvrD$predictaaplsvrD, resultssvrD$discClose, mode = "prec_recall")
+mean(c(.8235, .8161, .8125))#Precision
+mean(c(.8750, .7172, .9070)) #Recall
+mean(c(.8485, .7634, .8571)) #Fmeasure
+
+```
+
+
